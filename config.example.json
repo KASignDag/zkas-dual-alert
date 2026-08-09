@@ -14,7 +14,9 @@
     "bridge_recovered": true
   },
   "notifications": {
-    "console": {"enabled": true},
+    "console": {
+      "enabled": true
+    },
     "smtp": {
       "enabled": false,
       "host": "smtp.gmail.com",
@@ -25,9 +27,22 @@
       "from": "",
       "to": ""
     },
-    "twilio": {"enabled": false, "account_sid": "", "auth_token": "", "from_number": "", "to_number": ""},
-    "ntfy": {"enabled": false, "url": "", "token": ""},
-    "discord": {"enabled": false, "webhook_url": ""}
+    "twilio": {
+      "enabled": false,
+      "account_sid": "",
+      "auth_token": "",
+      "from_number": "",
+      "to_number": ""
+    },
+    "ntfy": {
+      "enabled": false,
+      "url": "",
+      "token": ""
+    },
+    "discord": {
+      "enabled": false,
+      "webhook_url": ""
+    }
   },
   "state_file": "state.json"
 }
