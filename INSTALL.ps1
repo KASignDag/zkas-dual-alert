@@ -11,12 +11,14 @@ $DataDir = Join-Path $InstallDir "data"
 Write-Host "Installing ZKas Dual Alert v0.2.2 - Unofficial Community Tool..."
 Write-Host "Target: $InstallDir"
 
+# Stop the old scheduled instance if present.
 $task = Get-ScheduledTask -TaskName "ZKas Dual Alert" -ErrorAction SilentlyContinue
 if ($task) {
     Stop-ScheduledTask -TaskName "ZKas Dual Alert" -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
 }
 
+# When migrating an older portable install, stop only Python processes launched from that exact folder.
 if ($MigrateFrom -and (Test-Path $MigrateFrom)) {
     Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
         Where-Object {
@@ -33,6 +35,7 @@ if ($MigrateFrom -and (Test-Path $MigrateFrom)) {
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
 
+# Copy only program/release files. Never overwrite data with package defaults.
 $programFiles = @(
     "app.py",
     "monitor.py",
@@ -54,6 +57,7 @@ foreach ($name in $programFiles) {
     }
 }
 
+# Migrate existing settings/state/credentials if requested.
 if ($MigrateFrom -and (Test-Path $MigrateFrom)) {
     foreach ($name in @("config.json", "web_config.json", "state.json", "alert.log")) {
         $candidates = @(
@@ -73,6 +77,7 @@ if (-not (Test-Path (Join-Path $DataDir "config.json"))) {
     Copy-Item (Join-Path $InstallDir "config.example.json") (Join-Path $DataDir "config.json")
 }
 
+# Protect stored credentials/settings from ordinary local users.
 & icacls.exe $DataDir /inheritance:r | Out-Null
 & icacls.exe $DataDir /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
 
