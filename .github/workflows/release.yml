@@ -1,0 +1,29 @@
+name: source-release
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m unittest discover -s tests -p "test_*.py"
+      - run: |
+          zip -r zkas-dual-alert-${GITHUB_REF_NAME}.zip . \
+            -x ".git/*" "data/*" "dist/*" "__pycache__/*" "*.pyc" "*.zip" "*.sha256" "config.json" "web_config.json" "state.json" "alert.log" "*.log" "*.pid" "*.db" "*.sqlite*" ".env*" "wallet-token.txt"
+          sha256sum zkas-dual-alert-${GITHUB_REF_NAME}.zip > zkas-dual-alert-${GITHUB_REF_NAME}.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-release
+          path: |
+            zkas-dual-alert-${{ github.ref_name }}.zip
+            zkas-dual-alert-${{ github.ref_name }}.zip.sha256
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            zkas-dual-alert-${{ github.ref_name }}.zip
+            zkas-dual-alert-${{ github.ref_name }}.zip.sha256
