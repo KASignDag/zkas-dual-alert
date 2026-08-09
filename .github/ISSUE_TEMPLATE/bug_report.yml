@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible ZKas Dual Alert — Unofficial Community Tool problem
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "**Unofficial Community Tool:** not affiliated with or endorsed by the ZKas project. Do not include passwords, Discord webhook URLs, wallet secrets, private keys, or seed phrases."
+  - type: input
+    id: version
+    attributes:
+      label: ZKas Dual Alert version
+      placeholder: v0.2.2
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: sanitized
+    attributes:
+      label: Sanitized logs or error output
+      description: Remove all credentials, addresses, tokens, and other secrets first.
