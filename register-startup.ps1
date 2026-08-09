@@ -38,7 +38,7 @@ function Resolve-RealPython {
     foreach ($candidate in ($candidates | Select-Object -Unique)) {
         if (-not (Test-Path $candidate)) { continue }
         try {
-            & $candidate -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"
+            $ok = & $candidate -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"
             if ($LASTEXITCODE -eq 0) { return $candidate }
         } catch {}
     }
