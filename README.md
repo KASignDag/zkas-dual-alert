@@ -100,3 +100,9 @@ The repository may use the descriptive name `zkas-dual-alert`, but the product s
 **ZKas Dual Alert — Unofficial Community Tool**
 
 Do not present this project as an official ZKas application, service, wallet, node, or release.
+
+
+## ZKAS.stream Community Dashboard pairing
+The local setup UI can optionally pair Dual Alert with a private ZKAS.stream Solo Alert dashboard. ZKAS.stream creates a short-lived one-time pairing code. Dual Alert exchanges that code for a miner-specific publisher token and stores the token only in the protected local data folder.
+
+Only sanitized read-only telemetry is published: the chosen miner label, bridge status, uptime, accepted shares, and ZKAS/KAS block counters. Wallet seed phrases, private keys, miner passwords, wallet addresses, and remote-control permissions are not required or uploaded.
