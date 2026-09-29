@@ -16,6 +16,7 @@ Read-only block and bridge alerts for compatible ZKas/Kaspa `solo-dual-mode` set
 - Bridge offline / recovered alerts
 - Gmail/SMTP email alerts
 - Discord webhook alerts
+- Telegram Bot alerts
 - Safe **Simulate ZKAS Block** and **Simulate KAS Block** buttons
 - **Send Test Alert** with real per-channel success/failure reporting
 - Windows automatic startup
@@ -32,7 +33,7 @@ Phone Push and SMS/Text remain marked **Coming Soon** in the UI.
    `powershell -ExecutionPolicy Bypass -File .\INSTALL.ps1`
 4. Open `http://127.0.0.1:3040`.
 5. Login with `admin / 12345678`.
-6. Configure Email, Discord, or both.
+6. Configure Email, Discord, Telegram, or any combination.
 7. Save Settings and run the test/simulation buttons.
 
 The Windows installer uses the stable folder:
@@ -51,6 +52,9 @@ Gmail requires a Google App Password. Enter the Gmail address and App Password i
 
 ## Discord
 Paste a real Discord webhook URL (`/api/webhooks/...`), not a server invite URL. The UI never redisplays the saved webhook after it is stored.
+
+## Telegram
+Create or use a Telegram bot, then enter its bot token and the destination chat ID in the local setup UI. The bot token is stored only in the protected local data folder and is never published by the monitor.
 
 ## Safety
 The web UI binds to `127.0.0.1` by default, so it is local-only. Do not expose port 3040 directly to the public Internet, especially while using the default password.
