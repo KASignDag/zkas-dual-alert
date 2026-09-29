@@ -125,6 +125,7 @@ def default_config():
             "twilio": {"enabled": False, "account_sid": "", "auth_token": "", "from_number": "", "to_number": ""},
             "ntfy": {"enabled": False, "url": "", "token": ""},
             "discord": {"enabled": False, "webhook_url": ""},
+            "telegram": {"enabled": False, "bot_token": "", "chat_id": ""},
         },
         "state_file": "state.json",
     }
@@ -219,6 +220,7 @@ def run_notification_test(kind="test"):
         label = {
             "SMTPNotifier": "Email",
             "DiscordNotifier": "Discord",
+            "TelegramNotifier": "Telegram",
             "TwilioNotifier": "SMS",
             "NtfyNotifier": "Push",
         }.get(name, name)
@@ -268,6 +270,7 @@ def dashboard(message="", success=True):
     a = cfg["alerts"]
     smtp = cfg["notifications"]["smtp"]
     disc = cfg["notifications"]["discord"]
+    telegram = cfg["notifications"].get("telegram", {"enabled": False, "bot_token": "", "chat_id": ""})
     ok, status = bridge_status(b.get("base_url", "http://127.0.0.1:3033"))
     msg_html = ""
     if message:
@@ -304,6 +307,12 @@ def dashboard(message="", success=True):
 {checkbox('discord_enabled','Enable Discord',disc.get('enabled',False))}
 <label>Discord webhook URL</label><input type="password" name="discord_webhook" placeholder="Leave blank to keep saved webhook">
 <p class="muted">Saved webhook: {'Yes' if disc.get('webhook_url') else 'No'}.</p>
+
+<h3>Telegram</h3>
+{checkbox('telegram_enabled','Enable Telegram',telegram.get('enabled',False))}
+<div class="grid"><div><label>Bot token</label><input type="password" name="telegram_bot_token" placeholder="Leave blank to keep saved token"></div>
+<div><label>Chat ID</label><input type="text" name="telegram_chat_id" value="{esc(telegram.get('chat_id'))}"></div></div>
+<p class="muted">Saved bot token: {'Yes' if telegram.get('bot_token') else 'No'}. The token stays in the protected local data folder.</p>
 
 <div class="grid soon"><div><h3>Phone Push</h3><p>Coming soon</p></div><div><h3>SMS / Text</h3><p>Coming soon</p></div></div>
 <p><button type="submit">Save Settings</button></p></form>
@@ -398,6 +407,13 @@ class Handler(BaseHTTPRequestHandler):
             webhook = f.get("discord_webhook", "").strip()
             if webhook:
                 disc["webhook_url"] = webhook
+
+            telegram = cfg["notifications"].setdefault("telegram", {"enabled": False, "bot_token": "", "chat_id": ""})
+            telegram["enabled"] = "telegram_enabled" in f
+            telegram["chat_id"] = f.get("telegram_chat_id", "").strip()
+            bot_token = f.get("telegram_bot_token", "").strip()
+            if bot_token:
+                telegram["bot_token"] = bot_token
 
             save_config(cfg)
             return self.send_html(dashboard("Settings saved."))
