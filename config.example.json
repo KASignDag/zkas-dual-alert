@@ -42,6 +42,11 @@
     "discord": {
       "enabled": false,
       "webhook_url": ""
+    },
+    "telegram": {
+      "enabled": false,
+      "bot_token": "",
+      "chat_id": ""
     }
   },
   "state_file": "state.json"
