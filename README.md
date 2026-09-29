@@ -26,6 +26,16 @@ Read-only block and bridge alerts for compatible ZKas/Kaspa `solo-dual-mode` set
 
 Phone Push and SMS/Text remain marked **Coming Soon** in the UI.
 
+## Plug-and-play Windows setup
+For most community miners:
+1. Extract the release ZIP.
+2. Double-click `SETUP.cmd`.
+3. Approve the Windows administrator prompt.
+4. Paste the one-time ZKAS.stream pairing code if you have one, or press Enter to skip.
+5. The installer auto-detects a compatible local bridge, registers startup, starts Dual Alert, and opens the local dashboard.
+
+ASIC temperature/fan monitoring remains optional. Rental or remote-hashrate users do not need ASIC access.
+
 ## Windows clean install
 1. Extract the release ZIP.
 2. Open PowerShell **as Administrator** in the extracted folder.
