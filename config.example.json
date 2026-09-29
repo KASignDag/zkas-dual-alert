@@ -49,5 +49,12 @@
       "chat_id": ""
     }
   },
+  "community_dashboard": {
+    "enabled": false,
+    "miner_label": "",
+    "publisher_token": "",
+    "pairing_url": "https://zkas.stream/api/solo-pairing?action=claim",
+    "telemetry_url": "https://zkas.stream/api/solo-telemetry"
+  },
   "state_file": "state.json"
 }
