@@ -354,12 +354,30 @@ class DiscordNotifier(Notifier):
                      headers={"Content-Type": "application/json"}, timeout=15)
 
 
+class TelegramNotifier(Notifier):
+    def __init__(self, cfg: Dict[str, Any]):
+        self.cfg = cfg
+
+    def send(self, subject: str, body: str) -> None:
+        token = str(self.cfg.get("bot_token", "")).strip()
+        chat_id = str(self.cfg.get("chat_id", "")).strip()
+        if not token or not chat_id:
+            raise ValueError("Telegram bot token and chat ID are required")
+        payload = json.dumps({
+            "chat_id": chat_id,
+            "text": f"{subject}\n\n{body}",
+            "disable_web_page_preview": True,
+        }).encode("utf-8")
+        http_request(f"https://api.telegram.org/bot{token}/sendMessage", method="POST", data=payload,
+                     headers={"Content-Type": "application/json"}, timeout=15)
+
+
 def build_notifiers(cfg: Dict[str, Any]) -> List[Notifier]:
     out: List[Notifier] = []
     nc = cfg.get("notifications", {})
     if nc.get("console", {}).get("enabled", True):
         out.append(ConsoleNotifier())
-    for key, klass in [("smtp", SMTPNotifier), ("twilio", TwilioNotifier), ("ntfy", NtfyNotifier), ("discord", DiscordNotifier)]:
+    for key, klass in [("smtp", SMTPNotifier), ("twilio", TwilioNotifier), ("ntfy", NtfyNotifier), ("discord", DiscordNotifier), ("telegram", TelegramNotifier)]:
         section = nc.get(key, {})
         if section.get("enabled", False):
             out.append(klass(section))
