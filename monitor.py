@@ -436,6 +436,41 @@ def save_state(path: Path, state: Dict[str, Any]) -> None:
     tmp.replace(path)
 
 
+def publish_community_telemetry(cfg: Dict[str, Any], snap: Snapshot) -> None:
+    """Publish sanitized aggregate bridge telemetry using a per-miner publisher token."""
+    community = cfg.get("community_dashboard", {})
+    if not community.get("enabled", False):
+        return
+    publisher_token = str(community.get("publisher_token", "")).strip()
+    endpoint = str(community.get("telemetry_url", "https://zkas.stream/api/solo-telemetry")).strip()
+    if not publisher_token or not endpoint:
+        return
+
+    worker = str(community.get("miner_label", "Dual Alert Bridge")).strip()[:64] or "Dual Alert Bridge"
+    payload = {
+        "status": "online",
+        "worker": worker,
+        "hashrateHps": None,
+        "uptimeSeconds": snap.bridge_uptime,
+        "acceptedShares": snap.total_shares,
+        "invalidShares": None,
+        "staleShares": None,
+        "zkasBlocks": snap.zkas_total,
+        "kasBlocks": snap.kas_total,
+        "lastShareAt": None,
+    }
+    http_request(
+        endpoint,
+        method="POST",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {publisher_token}",
+            "Content-Type": "application/json",
+        },
+        timeout=15,
+    )
+
+
 def monitor(config_path: Path, once: bool = False, test_notification: bool = False, stop_event: Any = None) -> int:
     raw_cfg = json.loads(config_path.read_text(encoding="utf-8"))
     cfg = deep_resolve(raw_cfg)
@@ -510,6 +545,10 @@ def monitor(config_path: Path, once: bool = False, test_notification: bool = Fal
 
             state = {"seen": sorted(seen), "reward_seen": sorted(reward_seen), "counts": counts, "last_source": snap.source, "updated": int(time.time())}
             save_state(state_path, state)
+            try:
+                publish_community_telemetry(cfg, snap)
+            except Exception as publish_exc:
+                log(f"Community dashboard publish failed: {publish_exc}")
             log(f"OK source={snap.source} ZKAS={snap.zkas_total} KAS={snap.kas_total} workers={snap.active_workers if snap.active_workers is not None else '-'} shares={snap.total_shares if snap.total_shares is not None else '-'}")
         except Exception as exc:
             failures += 1
