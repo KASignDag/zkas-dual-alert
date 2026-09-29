@@ -443,7 +443,10 @@ class Handler(BaseHTTPRequestHandler):
             if pair_requested:
                 if not pairing_code:
                     return self.send_html(dashboard("Enter the one-time pairing code first.", False), 400)
-                payload = json.dumps({"pairingCode": pairing_code}).encode("utf-8")
+                worker = str(community.get("miner_label", "")).strip()
+                if not worker:
+                    return self.send_html(dashboard("Community Mining worker label is required before pairing.", False), 400)
+                payload = json.dumps({"pairingCode": pairing_code, "worker": worker}).encode("utf-8")
                 try:
                     raw = monitor.http_request(
                         community.get("pairing_url", "https://zkas.stream/api/solo-pairing?action=claim"),
