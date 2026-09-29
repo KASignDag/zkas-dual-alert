@@ -354,12 +354,30 @@ class DiscordNotifier(Notifier):
                      headers={"Content-Type": "application/json"}, timeout=15)
 
 
+class TelegramNotifier(Notifier):
+    def __init__(self, cfg: Dict[str, Any]):
+        self.cfg = cfg
+
+    def send(self, subject: str, body: str) -> None:
+        token = str(self.cfg.get("bot_token", "")).strip()
+        chat_id = str(self.cfg.get("chat_id", "")).strip()
+        if not token or not chat_id:
+            raise ValueError("Telegram bot token and chat ID are required")
+        payload = json.dumps({
+            "chat_id": chat_id,
+            "text": f"{subject}\n\n{body}",
+            "disable_web_page_preview": True,
+        }).encode("utf-8")
+        http_request(f"https://api.telegram.org/bot{token}/sendMessage", method="POST", data=payload,
+                     headers={"Content-Type": "application/json"}, timeout=15)
+
+
 def build_notifiers(cfg: Dict[str, Any]) -> List[Notifier]:
     out: List[Notifier] = []
     nc = cfg.get("notifications", {})
     if nc.get("console", {}).get("enabled", True):
         out.append(ConsoleNotifier())
-    for key, klass in [("smtp", SMTPNotifier), ("twilio", TwilioNotifier), ("ntfy", NtfyNotifier), ("discord", DiscordNotifier)]:
+    for key, klass in [("smtp", SMTPNotifier), ("twilio", TwilioNotifier), ("ntfy", NtfyNotifier), ("discord", DiscordNotifier), ("telegram", TelegramNotifier)]:
         section = nc.get(key, {})
         if section.get("enabled", False):
             out.append(klass(section))
@@ -416,6 +434,41 @@ def save_state(path: Path, state: Dict[str, Any]) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
     tmp.replace(path)
+
+
+def publish_community_telemetry(cfg: Dict[str, Any], snap: Snapshot) -> None:
+    """Publish sanitized aggregate bridge telemetry using a per-miner publisher token."""
+    community = cfg.get("community_dashboard", {})
+    if not community.get("enabled", False):
+        return
+    publisher_token = str(community.get("publisher_token", "")).strip()
+    endpoint = str(community.get("telemetry_url", "https://zkas.stream/api/solo-telemetry")).strip()
+    if not publisher_token or not endpoint:
+        return
+
+    worker = str(community.get("miner_label", "Dual Alert Bridge")).strip()[:64] or "Dual Alert Bridge"
+    payload = {
+        "status": "online",
+        "worker": worker,
+        "hashrateHps": None,
+        "uptimeSeconds": snap.bridge_uptime,
+        "acceptedShares": snap.total_shares,
+        "invalidShares": None,
+        "staleShares": None,
+        "zkasBlocks": snap.zkas_total,
+        "kasBlocks": snap.kas_total,
+        "lastShareAt": None,
+    }
+    http_request(
+        endpoint,
+        method="POST",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {publisher_token}",
+            "Content-Type": "application/json",
+        },
+        timeout=15,
+    )
 
 
 def monitor(config_path: Path, once: bool = False, test_notification: bool = False, stop_event: Any = None) -> int:
@@ -492,6 +545,10 @@ def monitor(config_path: Path, once: bool = False, test_notification: bool = Fal
 
             state = {"seen": sorted(seen), "reward_seen": sorted(reward_seen), "counts": counts, "last_source": snap.source, "updated": int(time.time())}
             save_state(state_path, state)
+            try:
+                publish_community_telemetry(cfg, snap)
+            except Exception as publish_exc:
+                log(f"Community dashboard publish failed: {publish_exc}")
             log(f"OK source={snap.source} ZKAS={snap.zkas_total} KAS={snap.kas_total} workers={snap.active_workers if snap.active_workers is not None else '-'} shares={snap.total_shares if snap.total_shares is not None else '-'}")
         except Exception as exc:
             failures += 1

@@ -16,6 +16,7 @@ Read-only block and bridge alerts for compatible ZKas/Kaspa `solo-dual-mode` set
 - Bridge offline / recovered alerts
 - Gmail/SMTP email alerts
 - Discord webhook alerts
+- Telegram Bot alerts
 - Safe **Simulate ZKAS Block** and **Simulate KAS Block** buttons
 - **Send Test Alert** with real per-channel success/failure reporting
 - Windows automatic startup
@@ -25,6 +26,16 @@ Read-only block and bridge alerts for compatible ZKas/Kaspa `solo-dual-mode` set
 
 Phone Push and SMS/Text remain marked **Coming Soon** in the UI.
 
+## Plug-and-play Windows setup
+For most community miners:
+1. Extract the release ZIP.
+2. Double-click `SETUP.cmd`.
+3. Approve the Windows administrator prompt.
+4. Paste the one-time ZKAS.stream pairing code if you have one, or press Enter to skip.
+5. The installer auto-detects a compatible local bridge, registers startup, starts Dual Alert, and opens the local dashboard.
+
+ASIC temperature/fan monitoring remains optional. Rental or remote-hashrate users do not need ASIC access.
+
 ## Windows clean install
 1. Extract the release ZIP.
 2. Open PowerShell **as Administrator** in the extracted folder.
@@ -32,7 +43,7 @@ Phone Push and SMS/Text remain marked **Coming Soon** in the UI.
    `powershell -ExecutionPolicy Bypass -File .\INSTALL.ps1`
 4. Open `http://127.0.0.1:3040`.
 5. Login with `admin / 12345678`.
-6. Configure Email, Discord, or both.
+6. Configure Email, Discord, Telegram, or any combination.
 7. Save Settings and run the test/simulation buttons.
 
 The Windows installer uses the stable folder:
@@ -51,6 +62,9 @@ Gmail requires a Google App Password. Enter the Gmail address and App Password i
 
 ## Discord
 Paste a real Discord webhook URL (`/api/webhooks/...`), not a server invite URL. The UI never redisplays the saved webhook after it is stored.
+
+## Telegram
+Create or use a Telegram bot, then enter its bot token and the destination chat ID in the local setup UI. The bot token is stored only in the protected local data folder and is never published by the monitor.
 
 ## Safety
 The web UI binds to `127.0.0.1` by default, so it is local-only. Do not expose port 3040 directly to the public Internet, especially while using the default password.
@@ -96,3 +110,9 @@ The repository may use the descriptive name `zkas-dual-alert`, but the product s
 **ZKas Dual Alert — Unofficial Community Tool**
 
 Do not present this project as an official ZKas application, service, wallet, node, or release.
+
+
+## ZKAS.stream Community Dashboard pairing
+The local setup UI can optionally pair Dual Alert with a private ZKAS.stream Solo Alert dashboard. ZKAS.stream creates a short-lived one-time pairing code. Dual Alert exchanges that code for a miner-specific publisher token and stores the token only in the protected local data folder.
+
+Only sanitized read-only telemetry is published: the chosen miner label, bridge status, uptime, accepted shares, and ZKAS/KAS block counters. Wallet seed phrases, private keys, miner passwords, wallet addresses, and remote-control permissions are not required or uploaded.

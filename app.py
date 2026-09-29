@@ -125,6 +125,14 @@ def default_config():
             "twilio": {"enabled": False, "account_sid": "", "auth_token": "", "from_number": "", "to_number": ""},
             "ntfy": {"enabled": False, "url": "", "token": ""},
             "discord": {"enabled": False, "webhook_url": ""},
+            "telegram": {"enabled": False, "bot_token": "", "chat_id": ""},
+        },
+        "community_dashboard": {
+            "enabled": False,
+            "miner_label": "",
+            "publisher_token": "",
+            "pairing_url": "https://zkas.stream/api/solo-pairing?action=claim",
+            "telemetry_url": "https://zkas.stream/api/solo-telemetry"
         },
         "state_file": "state.json",
     }
@@ -219,6 +227,7 @@ def run_notification_test(kind="test"):
         label = {
             "SMTPNotifier": "Email",
             "DiscordNotifier": "Discord",
+            "TelegramNotifier": "Telegram",
             "TwilioNotifier": "SMS",
             "NtfyNotifier": "Push",
         }.get(name, name)
@@ -268,6 +277,8 @@ def dashboard(message="", success=True):
     a = cfg["alerts"]
     smtp = cfg["notifications"]["smtp"]
     disc = cfg["notifications"]["discord"]
+    telegram = cfg["notifications"].get("telegram", {"enabled": False, "bot_token": "", "chat_id": ""})
+    community = cfg.get("community_dashboard", {})
     ok, status = bridge_status(b.get("base_url", "http://127.0.0.1:3033"))
     msg_html = ""
     if message:
@@ -305,8 +316,20 @@ def dashboard(message="", success=True):
 <label>Discord webhook URL</label><input type="password" name="discord_webhook" placeholder="Leave blank to keep saved webhook">
 <p class="muted">Saved webhook: {'Yes' if disc.get('webhook_url') else 'No'}.</p>
 
+<h3>Telegram</h3>
+{checkbox('telegram_enabled','Enable Telegram',telegram.get('enabled',False))}
+<div class="grid"><div><label>Bot token</label><input type="password" name="telegram_bot_token" placeholder="Leave blank to keep saved token"></div>
+<div><label>Chat ID</label><input type="text" name="telegram_chat_id" value="{esc(telegram.get('chat_id'))}"></div></div>
+<p class="muted">Saved bot token: {'Yes' if telegram.get('bot_token') else 'No'}. The token stays in the protected local data folder.</p>
+
 <div class="grid soon"><div><h3>Phone Push</h3><p>Coming soon</p></div><div><h3>SMS / Text</h3><p>Coming soon</p></div></div>
-<p><button type="submit">Save Settings</button></p></form>
+
+<h2>ZKAS.stream Community Dashboard</h2>
+<p class="muted">Optional. Pair this local Dual Alert installation to your private ZKAS.stream Solo Alert dashboard using a one-time code.</p>
+<label>Miner / worker label</label><input type="text" name="community_miner_label" value="{esc(community.get('miner_label'))}" placeholder="Example: Basement KS0 Ultra">
+<label>One-time pairing code</label><input type="text" name="community_pairing_code" placeholder="Enter the 10-character code from ZKAS.stream">
+<p class="muted">Paired: {'Yes' if community.get('publisher_token') else 'No'}. Publisher tokens stay only in the protected local data folder.</p>
+<p><button type="submit">Save Settings</button> <button type="submit" name="pair_community" value="1">Pair with ZKAS.stream</button></p></form>
 
 <form method="post" action="/test"><button>Send Test Alert</button></form>
 <form method="post" action="/simulate"><button name="chain" value="zkas">Simulate ZKAS Block</button><button name="chain" value="kas">Simulate KAS Block</button></form>
@@ -398,6 +421,50 @@ class Handler(BaseHTTPRequestHandler):
             webhook = f.get("discord_webhook", "").strip()
             if webhook:
                 disc["webhook_url"] = webhook
+
+            telegram = cfg["notifications"].setdefault("telegram", {"enabled": False, "bot_token": "", "chat_id": ""})
+            telegram["enabled"] = "telegram_enabled" in f
+            telegram["chat_id"] = f.get("telegram_chat_id", "").strip()
+            bot_token = f.get("telegram_bot_token", "").strip()
+            if bot_token:
+                telegram["bot_token"] = bot_token
+
+            community = cfg.setdefault("community_dashboard", {
+                "enabled": False,
+                "miner_label": "",
+                "publisher_token": "",
+                "pairing_url": "https://zkas.stream/api/solo-pairing?action=claim",
+                "telemetry_url": "https://zkas.stream/api/solo-telemetry",
+            })
+            community["miner_label"] = f.get("community_miner_label", "").strip()[:64]
+
+            pair_requested = f.get("pair_community") == "1"
+            pairing_code = f.get("community_pairing_code", "").strip().upper()
+            if pair_requested:
+                if not pairing_code:
+                    return self.send_html(dashboard("Enter the one-time pairing code first.", False), 400)
+                worker = str(community.get("miner_label", "")).strip()
+                if not worker:
+                    return self.send_html(dashboard("Community Mining worker label is required before pairing.", False), 400)
+                payload = json.dumps({"pairingCode": pairing_code, "worker": worker}).encode("utf-8")
+                try:
+                    raw = monitor.http_request(
+                        community.get("pairing_url", "https://zkas.stream/api/solo-pairing?action=claim"),
+                        method="POST",
+                        data=payload,
+                        headers={"Content-Type": "application/json"},
+                        timeout=15,
+                    )
+                    result = json.loads(raw.decode("utf-8"))
+                    token = str(result.get("publisherToken", "")).strip()
+                    if not token:
+                        raise ValueError("Pairing service did not return a publisher token")
+                    community["publisher_token"] = token
+                    community["enabled"] = True
+                    save_config(cfg)
+                    return self.send_html(dashboard("Paired with your private ZKAS.stream Solo Alert dashboard."))
+                except Exception as exc:
+                    return self.send_html(dashboard(f"Pairing failed: {exc}", False), 400)
 
             save_config(cfg)
             return self.send_html(dashboard("Settings saved."))
